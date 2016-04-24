@@ -1,4 +1,21 @@
 #compdef docker-machine
+# Description
+# -----------
+#  zsh completion for docker-machine
+#  https://github.com/leonhartX/docker-machine-zsh-completion
+# -------------------------------------------------------------------------
+# Version
+# -------
+#  0.1.0
+# -------------------------------------------------------------------------
+# Authors
+# -------
+#  * Ke Xu <leonhartx.k@gmail.com>
+# -------------------------------------------------------------------------
+# Inspiration
+# -----------
+#  * @sdurrheimer docker-compose-zsh-completion https://github.com/sdurrheimer/docker-compose-zsh-completion
+#  * @ilkka _docker-machine
 
 __docker-machine_hosts() {
     declare -a hosts
@@ -196,7 +213,5 @@ _docker-machine() {
 
     return ret
 }
-
-
 
 _docker-machine "$@"
