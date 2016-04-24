@@ -1,0 +1,207 @@
+#compdef docker-machine
+
+__machines(){
+    docker-machine ls|tail -n +2|awk '{print $1":"$3"("$4")"}'
+}
+
+__docker-machine_machines() {
+    declare -a machines_cmd
+    machines_cmd=($(docker-machine ls|tail -n +2|awk '{print $1":"$3"("$4")"}'))
+    _describe 'machines' machines_cmd
+}
+
+__docker-machine_machines_and_files() {
+    _alternative "machines:machine:__docker-machine_machines" 'files:files:_path_files'
+}
+
+__docker-machine_subcommand() {
+    local opts_help="(- :)"{-h,--help}"[Print usage]"
+    local -a opts_only_host
+    opts_only_host=(
+        "(- :)"{-h,--help}"[Print usage]"
+        "*:machines:__docker-machine_machines"
+    )
+    integer ret=1
+
+    _message "test $words[1]"
+    case "$words[1]" in
+        (active)
+            _arguments \
+                $opts_help \
+                '(--timeout -t)'{--timeout,-t}'[Timeout in seconds, default to 10s]' \
+                '*:machines:__docker-machine_machines' && ret=0
+            ;;
+        (config)
+            _arguments \
+                $opts_help \
+                '--swarm[Display the Swarm config instead of the Docker daemon]' && ret=0
+            ;;
+        (create)
+            _arguments \
+                $opts_help \
+                '(--driver -d)'{--driver,-d}'[Driver to create machine with]' \
+                '--engine-install-url[Custom URL to use for engine installation]' \
+                '*--engine-opt[Specify arbitrary flags to include with the created engine in the form flag=value]' \
+                '*--engine-insecure-registry[Specify insecure registries to allow with the created engine]' \
+                '*--engine-registry-mirror[Specify registry mirrors to use]' \
+                '*--engine-label[Specify labels for the created engine]' \
+                '--engine-storage-driver[Specify a storage driver to use with the engine]' \
+                '*--engine-env[Specify environment variables to set in the engine]' \
+                '--swarm[Configure Machine with Swarm]' \
+                '--swarm-image[Specify Docker image to use for Swarm]' \
+                '--swarm-master[Configure Machine to be a Swarm master]' \
+                '--swarm-discovery[Discovery service to use with Swarm]' \
+                '--swarm-strategy[Define a default scheduling strategy for Swarm]' \
+                '*--swarm-opt[Define arbitrary flags for swarm]' \
+                '--swarm-host[ip/socket to listen on for Swarm master]' \
+                '--swarm-addr[addr to advertise for Swarm (default: detect and use the machine IP)]' \
+                '--swarm-experimental[Enable Swarm experimental features]' \
+                '*--tls-san[Support extra SANs for TLS certs]' && ret=0
+            ;;
+        (env)
+            _arguments \
+                $opts_help \
+                '--swarm[Display the Swarm config instead of the Docker daemon]' \
+                '--shell[Force environment to be configured for a specified shell: [fish, cmd, powershell], default is auto-detect]]' \
+                '(--unset -u)'{-unset,-u}'Unset variables instead of setting them' \
+                '--no-proxy[Add machine IP to NO_PROXY environment variable]' && ret=0
+                '*:machines:__docker-machine_machines' && ret=0
+            ;;
+        (help)
+            _arguments ':subcommand:__docker-machine_commands' && ret=0
+            ;;
+        (inspect)
+            _arguments \
+                $opts_help \
+                '(--format -f)'{--format,-t}'[Format the output using the given go template]' \
+                '*:machines:__docker-machine_machines' && ret=0
+            ;;
+        (ip)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (kill)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (ls)
+            _arguments \
+                $opts_help \
+                '(--quiet -q)'{--quiet,-q}'[Enable quiet mode]' \
+                '*--filter[Filter output based on conditions provided]' \
+                '(--timeout -t)'{--timeout,-t}'[Timeout in seconds, default to 10s]' \
+                '(--format -f)'{--format,-t}'[Pretty-print machines using a Go template]' && ret=0
+            ;;
+        (provision)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (regenerate-certs)
+            _arguments \
+                $opts_help \
+                '(--force -f)'{--force,-f}'[Force rebuild and do not prompt]' \
+                '*:machines:__docker-machine_machines' && ret=0
+            ;;
+        (restart)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (rm)
+            _arguments \
+                $opts_help \
+                '(--force -f)'{--force,-f}'[Remove local configuration even if machine cannot be removed, also implies an automatic yes (`-y`)]' \
+                '-y[Assumes automatic yes to proceed with remove, without prompting further user confirmation]' \
+                '*:machines:__docker-machine_machines' && ret=0
+            ;;
+        (scp)
+            _arguments \
+                $opts_help \
+                '(--recursive -r)'{--recursive,-r}'[Copy files recursively (required to copy directories))]' \
+                '*:files:__docker-machine_machines_and_files' && ret=0
+            ;;
+        (ssh)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (start)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (status)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (stop)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (upgrade)
+            _arguments $opts_only_host && ret=0
+            ;;
+        (url)
+            _arguments $opts_only_host && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+
+__docker-machine_commands() {
+    local cache_policy
+
+    zstyle -s ":completion:${curcontext}:" cache-policy cache_policy
+#    if [[ -z "$cache_policy" ]]; then
+#        zstyle ":completion:${curcontext}:" cache-policy __docker-machine_caching_policy
+#    fi
+
+#    if ( [[ ${+_docker_machine_subcommands} -eq 0 ]] || _cache_invalid docker_machine_subcommands) \
+#        && ! _retrieve_cache docker_machine_subcommands;
+#    then
+        local -a lines
+        lines=(${(f)"$(_call_program commands docker-machine 2>&1)"})
+        _docker_machine_subcommands=(${${${lines[$((${lines[(i)Commands:]} + 1)),${lines[(I)  *]}]}## #}/$'\t'##/:})
+        (( $#_docker_machine_subcommands > 0 )) && _store_cache docker_machine_subcommands _docker_machine_subcommands
+#    fi
+    _describe -t docker-machine-commands "docker-machine command" _docker_machine_subcommands
+}
+
+__docker-machine_caching_policy() {
+    oldp=( "$1"(Nmh+1) )            # 1 hour
+    (( $#oldp ))
+}
+
+_docker-machine() {
+    if [[ $service != docker-machine ]]; then
+        _call_function - _$service
+        return
+    fi
+
+    local curcontext="$curcontext" state line
+    integer ret=1
+    typeset -A opt_args
+
+    _arguments -C \
+        "(- :)"{-h,--help}"[Show help]" \
+        "(-D --debug)"{-D,--debug}"[Enable debug mode]" \
+        '(-s --stroage-path)'{-s,--storage-path}'[Configures storage path]:file:_files' \
+        '--tls-ca-cert[CA to verify remotes against]:file:_files' \
+        '--tls-ca-key[Private key to generate certificates]:file:_files' \
+        '--tls-client-cert[Client cert to use for TLS]:file:_files' \
+        '--tls-client-key[Private key used in client TLS auth]:file:_files' \
+        '--github-api-token[Token to use for requests to the Github API]' \
+        '--native-ssh[Use the native (Go-based) SSH implementation.]' \
+        '--bugsnag-api-token[BugSnag API token for crash reporting]' \
+        '(- :)'{-v,--version}'[Print the version]' \
+        "(-): :->command" \
+        "(-)*:: :->option-or-argument" && ret=0
+
+    case $state in
+        (command)
+            __docker-machine_commands && ret=0
+            ;;
+        (option-or-argument)
+            curcontext=${curcontext%:*:*}:docker-machine-$words[1]:
+            __docker-machine_subcommand && ret=0
+            ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+
+
+_docker-machine "$@"
