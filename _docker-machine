@@ -17,26 +17,43 @@
 #  * @sdurrheimer docker-compose-zsh-completion https://github.com/sdurrheimer/docker-compose-zsh-completion
 #  * @ilkka _docker-machine
 
-__docker-machine_hosts() {
+
+__docker-machine_get_hosts() {
+    [[ $PREFIX = -* ]] && return 1
+    local state
     declare -a hosts
-    hosts=($(docker-machine ls -f "{{.Name}}:{{.DriverName}}({{.State}})"))
+    state=$1; shift
+    if [[ $state != all ]]; then
+        hosts=($(docker-machine ls -q --filter state=$state))
+    else
+        hosts=($(docker-machine ls -q))
+    fi
+    _describe 'host' hosts "$@" && ret=0
+    return ret
+}
+
+__docker-machine_hosts_with_state() {
+    declare -a hosts
+    hosts=($(docker-machine ls -f "{{.Name}}:{{.DriverName}}({{.State}}),{{.URL}}"))
     _describe 'host' hosts
 }
 
-__docker-machine_hosts_name_only() {
-    declare -a hosts
-    hosts=($(docker-machine ls -f "{{.Name}}"))
-    _describe 'host' hosts -qS ":"
+__docker-machine_hosts_all() {
+    __docker-machine_get_hosts all "$@"
 }
 
-__docker-machine_hosts_swarm() {
+__docker-machine_hosts_running() {
+    __docker-machine_get_hosts Running "$@"
+}
+
+__docker-machine_get_swarm() {
     declare -a swarm
     swarm=($(docker-machine ls -f {{.Swarm}} | awk '{print $1}'))
     _describe 'swarm' swarm
 }
 
 __docker-machine_hosts_and_files() {
-    _alternative "hosts:hosts:__docker-machine_hosts_name_only" 'files:files:_path_files'
+    _alternative "hosts:host:__docker-machine_hosts_all -qS ':'" 'files:files:_path_files'
 }
 
 __docker-machine_filters() {
@@ -49,14 +66,14 @@ __docker-machine_filters() {
                 _describe -t driver-filter-opts "driver filter" opts_driver && ret=0
                 ;;
             (swarm)
-                __docker-machine_hosts_swarm && ret=0
+                __docker-machine_get_swarm && ret=0
                 ;;
             (state)
                 opts_state=('Running' 'Paused' 'Saved' 'Stopped' 'Stopping' 'Starting' 'Error')
                 _describe -t state-filter-opts "state filter" opts_state && ret=0
                 ;;
             (name)
-                __docker-machine_hosts && ret=0
+                __docker-machine_hosts_all && ret=0
                 ;;
             (label)
                 _message 'label' && ret=0
@@ -76,8 +93,9 @@ __docker-machine_subcommand() {
     local opts_help="(- :)"{-h,--help}"[Print usage]"
     local -a opts_only_host opts_driver opts_storage_driver opts_stragery
     opts_only_host=(
-        "(- :)"{-h,--help}"[Print usage]"
-        "*:machines:__docker-machine_hosts"
+        "$opts_help"
+        #"(- :)"{-h,--help}"[Print usage]"
+        "*:host:__docker-machine_hosts_all"
     )
     opts_driver=('amazonec2' 'azure' 'digitalocean' 'exoscale' 'generic' 'google' 'hyperv' 'none' 'openstack' 'rackspace' 'softlayer' 'virtualbox' 'vmwarefusion' 'vmwarevcloudair' 'vmwarevsphere')
     opts_storage_driver=('overlay' 'aufs' 'btrfs' 'devicemapper' 'vfs' 'zfs')
@@ -93,7 +111,7 @@ __docker-machine_subcommand() {
             _arguments \
                 $opts_help \
                 '--swarm[Display the Swarm config instead of the Docker daemon]' \
-                "*:machines:__docker-machine_hosts" && ret=0
+                "*:host:__docker-machine_hosts_all" && ret=0
             ;;
         (create)
             _arguments \
@@ -132,7 +150,7 @@ __docker-machine_subcommand() {
                 '--shell[Force environment to be configured for a specified shell: \[fish, cmd, powershell\], default is auto-detect]' \
                 '(--unset -u)'{--unset,-u}'[Unset variables instead of setting them]' \
                 '--no-proxy[Add machine IP to NO_PROXY environment variable]' \
-                '*:machines:__docker-machine_hosts' && ret=0
+                '*:host:__docker-machine_hosts_running' && ret=0
             ;;
         (help)
             _arguments ':subcommand:__docker-machine_commands' && ret=0
@@ -141,13 +159,17 @@ __docker-machine_subcommand() {
             _arguments \
                 $opts_help \
                 '(--format -f)'{--format,-f}'[Format the output using the given go template]' \
-                '*:machines:__docker-machine_hosts' && ret=0
+                '*:host:__docker-machine_hosts_all' && ret=0
             ;;
         (ip)
-            _arguments $opts_only_host && ret=0
+            _arguments \
+                $opts_help \
+                '*:host:__docker-machine_hosts_running' && ret=0
             ;;
         (kill)
-            _arguments $opts_only_host && ret=0
+             _arguments \
+                $opts_help \
+                '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (ls)
             _arguments \
@@ -169,17 +191,19 @@ __docker-machine_subcommand() {
             _arguments \
                 $opts_help \
                 '(--force -f)'{--force,-f}'[Force rebuild and do not prompt]' \
-                '*:machines:__docker-machine_hosts' && ret=0
+                '*:host:__docker-machine_hosts_all' && ret=0
             ;;
         (restart)
-            _arguments $opts_only_host && ret=0
+            _arguments \
+                $opts_help \
+                '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (rm)
             _arguments \
                 $opts_help \
                 '(--force -f)'{--force,-f}'[Remove local configuration even if machine cannot be removed, also implies an automatic yes (`-y`)]' \
                 '-y[Assumes automatic yes to proceed with remove, without prompting further user confirmation]' \
-                '*:machines:__docker-machine_hosts' && ret=0
+                '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (scp)
             _arguments \
@@ -188,22 +212,30 @@ __docker-machine_subcommand() {
                 '*:files:__docker-machine_hosts_and_files' && ret=0
             ;;
         (ssh)
-            _arguments $opts_only_host && ret=0
+            _arguments \
+                $opts_help \
+                '*:host:__docker-machine_hosts_running' && ret=0
             ;;
         (start)
-            _arguments $opts_only_host && ret=0
+            _arguments \
+                $opts_help \
+                '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (status)
             _arguments $opts_only_host && ret=0
             ;;
         (stop)
-            _arguments $opts_only_host && ret=0
+            _arguments \
+                $opts_help \
+                '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (upgrade)
             _arguments $opts_only_host && ret=0
             ;;
         (url)
-            _arguments $opts_only_host && ret=0
+            _arguments \
+                $opts_help \
+                '*:host:__docker-machine_hosts_running' && ret=0
             ;;
     esac
 
