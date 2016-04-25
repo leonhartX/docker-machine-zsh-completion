@@ -19,15 +19,20 @@
 
 __docker-machine_hosts() {
     declare -a hosts
-#    hosts=($(docker-machine ls|tail -n +2|awk '{print $1":"$3"("$4")"}'))
     hosts=($(docker-machine ls -f "{{.Name}}:{{.DriverName}}({{.State}})"))
     _describe 'host' hosts
 }
 
 __docker-machine_hosts_name_only() {
     declare -a hosts
-    hosts=($(docker-machine ls -f "{{.Name}}:{{.DriverName}}"))
+    hosts=($(docker-machine ls -f "{{.Name}}"))
     _describe 'host' hosts -qS ":"
+}
+
+__docker-machine_hosts_swarm() {
+    declare -a swarm
+    swarm=($(docker-machine ls -f {{.Swarm}} | awk '{print $1}'))
+    _describe 'swarm' swarm
 }
 
 __docker-machine_hosts_and_files() {
@@ -39,23 +44,22 @@ __docker-machine_filters() {
     integer ret=1
 
     if compset -P '*='; then
-        _message "${${words[-1]%=*}#*=}"
         case "${${words[-1]%=*}#*=}" in
             (driver)
-                _describe -t driver-filter-opts "Driver Filter Option" opts_driver && ret=0
+                _describe -t driver-filter-opts "driver filter" opts_driver && ret=0
                 ;;
             (swarm)
-                ret=0
+                __docker-machine_hosts_swarm && ret=0
                 ;;
             (state)
                 opts_state=('Running' 'Paused' 'Saved' 'Stopped' 'Stopping' 'Starting' 'Error')
-                _describe -t state-filter-opts "State Filter Option" opts_state && ret=0
+                _describe -t state-filter-opts "state filter" opts_state && ret=0
                 ;;
             (name)
                 __docker-machine_hosts && ret=0
                 ;;
             (label)
-                ret=0
+                _message 'label' && ret=0
                 ;;
             *)
                 _message 'value' && ret=0
@@ -63,19 +67,20 @@ __docker-machine_filters() {
         esac
     else
         opts=('driver' 'swarm' 'state' 'name' 'label')
-        _describe -t filter-opts "Filter Options" opts -qS "=" && ret=0
+        _describe -t filter-opts "filter" opts -qS "=" && ret=0
     fi
 }
 
 
 __docker-machine_subcommand() {
     local opts_help="(- :)"{-h,--help}"[Print usage]"
-    local -a opts_only_host opts_driver
+    local -a opts_only_host opts_driver opts_storage_driver opts_stragery
     opts_only_host=(
         "(- :)"{-h,--help}"[Print usage]"
         "*:machines:__docker-machine_hosts"
     )
-    opts_driver=('amazonec2' 'azure' 'digitalocean' 'exoscale' 'generic' 'google' 'hyperv' 'openstack' 'rackspace' 'softlayer' 'virtualbox' 'vmwarefusion' 'vmwarevcloudair' 'vmwarevsphere')
+    opts_driver=('amazonec2' 'azure' 'digitalocean' 'exoscale' 'generic' 'google' 'hyperv' 'none' 'openstack' 'rackspace' 'softlayer' 'virtualbox' 'vmwarefusion' 'vmwarevcloudair' 'vmwarevsphere')
+    opts_storage_driver=('overlay' 'aufs' 'btrfs' 'devicemapper' 'vfs' 'zfs')
     integer ret=1
 
     case "$words[1]" in
@@ -93,24 +98,32 @@ __docker-machine_subcommand() {
         (create)
             _arguments \
                 $opts_help \
-                '(--driver -d)'{--driver,-d}'[Driver to create machine with]' \
+                '(--driver -d)'{--driver=,-d=}'[Driver to create machine with]:dirver:->driver-option' \
                 '--engine-install-url=[Custom URL to use for engine installation]:url' \
-                '*--engine-opt=[Specify arbitrary flags to include with the created engine in the form flag=value]' \
-                '*--engine-insecure-registry=[Specify insecure registries to allow with the created engine]' \
-                '*--engine-registry-mirror=[Specify registry mirrors to use]' \
-                '*--engine-label=[Specify labels for the created engine]' \
-                '--engine-storage-driver=[Specify a storage driver to use with the engine]' \
-                '*--engine-env=[Specify environment variables to set in the engine]' \
+                '*--engine-opt=[Specify arbitrary flags to include with the created engine in the form flag=value]:flag' \
+                '*--engine-insecure-registry=[Specify insecure registries to allow with the created engine]:registry' \
+                '*--engine-registry-mirror=[Specify registry mirrors to use]:mirror' \
+                '*--engine-label=[Specify labels for the created engine]:label' \
+                '--engine-storage-driver=[Specify a storage driver to use with the engine]:storage-driver:->storage-driver-option' \
+                '*--engine-env=[Specify environment variables to set in the engine]:environment' \
                 '--swarm[Configure Machine with Swarm]' \
-                '--swarm-image=[Specify Docker image to use for Swarm]' \
+                '--swarm-image=[Specify Docker image to use for Swarm]:image' \
                 '--swarm-master[Configure Machine to be a Swarm master]' \
-                '--swarm-discovery[Discovery service to use with Swarm]' \
-                '--swarm-strategy=[Define a default scheduling strategy for Swarm]' \
-                '*--swarm-opt=[Define arbitrary flags for swarm]' \
-                '--swarm-host=[ip/socket to listen on for Swarm master]' \
-                '--swarm-addr=[addr to advertise for Swarm (default: detect and use the machine IP)]' \
+                '--swarm-discovery=[Discovery service to use with Swarm]:service' \
+                '--swarm-strategy=[Define a default scheduling strategy for Swarm]:strategy:(spread binpack random)' \
+                '*--swarm-opt=[Define arbitrary flags for swarm]:flag' \
+                '--swarm-host=[ip/socket to listen on for Swarm master]:host' \
+                '--swarm-addr=[addr to advertise for Swarm (default: detect and use the machine IP)]:address' \
                 '--swarm-experimental[Enable Swarm experimental features]' \
-                '*--tls-san=[Support extra SANs for TLS certs]' && ret=0
+                '*--tls-san=[Support extra SANs for TLS certs]:option' && ret=0
+            case $state in
+                (driver-option)
+                    _describe -t driver-option "driver" opts_driver && ret=0
+                    ;;
+                (storage-driver-option)
+                    _describe -t storage-driver-option "storage driver" opts_storage_driver && ret=0
+                    ;;
+            esac
             ;;
         (env)
             _arguments \
@@ -142,7 +155,7 @@ __docker-machine_subcommand() {
                 '(--quiet -q)'{--quiet,-q}'[Enable quiet mode]' \
                 '*--filter=[Filter output based on conditions provided]:filter:->filter-options' \
                 '(--timeout -t)'{--timeout,-t}'[Timeout in seconds, default to 10s]' \
-                '(--format -f)'{--format,-t}'[Pretty-print machines using a Go template]' && ret=0
+                '(--format -f)'{--format,-f}'[Pretty-print machines using a Go template]' && ret=0
             case $state in
                 (filter-options)
                     __docker-machine_filters && ret=0
