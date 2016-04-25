@@ -88,6 +88,17 @@ __docker-machine_filters() {
     fi
 }
 
+__get_swarm_discovery() {
+    declare -a masters serivces
+    local service
+    services=()
+    masters=($(docker-machine ls -f {{.Swarm}} |grep '(master)' |awk '{print $1}'))
+    for master in $masters; do
+         service=${${$(docker-machine inspect -f '{{.HostOptions.SwarmOptions.Discovery}}:{{.Name}}' $master)}/:/\\:}
+         services=($services $service)
+    done
+    _describe -t services "swarm service" services && ret=0
+}
 
 __get_create_argument() {
     typeset -g docker_machine_driver
@@ -113,7 +124,7 @@ __get_create_argument() {
         '--swarm[Configure Machine with Swarm]' \
         '--swarm-image=[Specify Docker image to use for Swarm]:image' \
         '--swarm-master[Configure Machine to be a Swarm master]' \
-        '--swarm-discovery=[Discovery service to use with Swarm]:service' \
+        '--swarm-discovery=[Discovery service to use with Swarm]:service:->swarm-service' \
         '--swarm-strategy=[Define a default scheduling strategy for Swarm]:strategy:(spread binpack random)' \
         '*--swarm-opt=[Define arbitrary flags for swarm]:flag' \
         '--swarm-host=[ip/socket to listen on for Swarm master]:host' \
@@ -347,6 +358,9 @@ __get_create_argument() {
             ;;
         (storage-driver-option)
             _describe -t storage-driver-option "storage driver" opts_storage_driver && ret=0
+            ;;
+        (swarm-service)
+            __get_swarm_discovery && ret=0
             ;;
     esac
     return ret
