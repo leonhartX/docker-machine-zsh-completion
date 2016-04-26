@@ -24,9 +24,9 @@ __docker-machine_get_hosts() {
     declare -a hosts
     state=$1; shift
     if [[ $state != all ]]; then
-        hosts=($(docker-machine ls -q --filter state=$state))
+        hosts=(${(f)"$(_call_program commands docker-machine ls -q --filter state=$state)"})
     else
-        hosts=($(docker-machine ls -q))
+        hosts=(${(f)"$(_call_program commands docker-machine ls -q)"})
     fi
     _describe 'host' hosts "$@" && ret=0
     return ret
@@ -34,7 +34,7 @@ __docker-machine_get_hosts() {
 
 __docker-machine_hosts_with_state() {
     declare -a hosts
-    hosts=($(docker-machine ls -f "{{.Name}}:{{.DriverName}}({{.State}}),{{.URL}}"))
+    hosts=(${(f)"$(_call_program commands docker-machine ls -f '{{.Name}}\:{{.DriverName}}\({{.State}}\)\ {{.URL}}')"})
     _describe 'host' hosts
 }
 
@@ -47,9 +47,9 @@ __docker-machine_hosts_running() {
 }
 
 __docker-machine_get_swarm() {
-    declare -a swarm
-    swarm=($(docker-machine ls -f {{.Swarm}} | awk '{print $1}'))
-    _describe 'swarm' swarm
+    declare -a swarms
+    swarms=(${(f)"$(_call_program commands docker-machine ls -f {{.Swarm}} | awk '{print $1}')"})
+    _describe 'swarm' swarms
 }
 
 __docker-machine_hosts_and_files() {
@@ -86,6 +86,7 @@ __docker-machine_filters() {
         opts=('driver' 'swarm' 'state' 'name' 'label')
         _describe -t filter-opts "filter" opts -qS "=" && ret=0
     fi
+    return ret
 }
 
 __get_swarm_discovery() {
@@ -94,10 +95,11 @@ __get_swarm_discovery() {
     services=()
     masters=($(docker-machine ls -f {{.Swarm}} |grep '(master)' |awk '{print $1}'))
     for master in $masters; do
-         service=${${$(docker-machine inspect -f '{{.HostOptions.SwarmOptions.Discovery}}:{{.Name}}' $master)}/:/\\:}
+         service=${${${(f)"$(_call_program commands docker-machine inspect -f '{{.HostOptions.SwarmOptions.Discovery}}:{{.Name}}' $master)"}/:/\\:}}
          services=($services $service)
     done
     _describe -t services "swarm service" services && ret=0
+    return ret
 }
 
 __get_create_argument() {
