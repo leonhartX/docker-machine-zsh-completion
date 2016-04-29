@@ -132,7 +132,8 @@ __get_create_argument() {
         '--swarm-host=[ip/socket to listen on for Swarm master]:host' \
         '--swarm-addr=[addr to advertise for Swarm (default: detect and use the machine IP)]:address' \
         '--swarm-experimental[Enable Swarm experimental features]' \
-        '*--tls-san=[Support extra SANs for TLS certs]:option'
+        '*--tls-san=[Support extra SANs for TLS certs]:option' \
+        ": :->argument"
     )
     opts_amazonec2=(
         '--amazonec2-access-key[AWS Access Key]:' \
@@ -348,9 +349,10 @@ __get_create_argument() {
         '--vmwarevsphere-vcenter[vSphere IP/hostname for vCenter \[$VSPHERE_VCENTER\]]:' \
         '--vmwarevsphere-vcenter-port[vSphere Port for vCenter \[$VSPHERE_VCENTER_PORT\]]:'
     )
-    command_line="docker-machine create -d $docker_machine_driver 2>/dev/null | grep $docker_machine_driver | sed -e 's/\(--.*\)\ *\[\1[^]]*\]/*\1/g' -e 's/\(\[[^]]*\)/\\\\\\1\\\\/g' -e 's/\".*\"\(.*\)/\1:/g' | awk '{printf \"%s[\", \$1; for(i=2;i<=NF;i++) {printf \"%s \", \$i}; print \"]\"}'"
+    local driver_opt_cmd
+    driver_opt_cmd="docker-machine create -d $docker_machine_driver | grep $docker_machine_driver | sed -e 's/\(--.*\)\ *\[\1[^]]*\]/*\1/g' -e 's/\(\[[^]]*\)/\\\\\\1\\\\/g' -e 's/\".*\"\(.*\)/\1/g' | awk '{printf \"%s[\", \$1; for(i=2;i<=NF;i++) {printf \"%s \", \$i}; print \"]\"}'"
     if [[ $docker_machine_driver != "none" ]]; then
-        opts_provider=(${(f)"$(_call_program commands $command_line)"})
+        opts_provider=(${(f)"$(_call_program commands $driver_opt_cmd)"})
     fi
     _arguments \
         $opts_provider \
@@ -365,6 +367,9 @@ __get_create_argument() {
             ;;
         (swarm-service)
             __get_swarm_discovery && ret=0
+            ;;
+        (argument)
+            ret=0
             ;;
     esac
     return ret
