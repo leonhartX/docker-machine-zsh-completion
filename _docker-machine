@@ -348,10 +348,12 @@ __get_create_argument() {
         '--vmwarevsphere-vcenter[vSphere IP/hostname for vCenter \[$VSPHERE_VCENTER\]]:' \
         '--vmwarevsphere-vcenter-port[vSphere Port for vCenter \[$VSPHERE_VCENTER_PORT\]]:'
     )
-
-    opts_provider="opts_${docker_machine_driver}"
+    command_line="docker-machine create -d $docker_machine_driver 2>/dev/null | grep $docker_machine_driver | sed -e 's/\(--.*\)\ *\[\1[^]]*\]/*\1/g' -e 's/\(\[[^]]*\)/\\\\\\1\\\\/g' -e 's/\".*\"\(.*\)/\1:/g' | awk '{printf \"%s[\", \$1; for(i=2;i<=NF;i++) {printf \"%s \", \$i}; print \"]\"}'"
+    if [[ $docker_machine_driver != "none" ]]; then
+        opts_provider=(${(f)"$(_call_program commands $command_line)"})
+    fi
     _arguments \
-        ${(P)opts_provider} \
+        $opts_provider \
         $opts_common && ret=0
 
     case $state in
