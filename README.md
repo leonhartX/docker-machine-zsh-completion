@@ -1,7 +1,7 @@
 # docker-machine-zsh-completion
 A more functional and up-to-date zsh completion for docker-machine
 
-This is going to be merged in [docker-machine](https://github.com/docker/machine), but clone this repo to your completion path maybe a good way to easily keep it up-to-date.
+This has been merged in [docker-machine](https://github.com/docker/machine), but clone this repo to your completion path maybe a good way to easily keep it up-to-date.
 
 ## Installing Command Completion
 
