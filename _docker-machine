@@ -167,7 +167,6 @@ __get_create_argument() {
 
 
 __docker-machine_subcommand() {
-    local opts_help="(- :)"{-h,--help}"[Print usage]"
     local -a opts_only_host opts_driver opts_storage_driver opts_stragery
     opts_only_host=(
         "$opts_help"
@@ -180,12 +179,12 @@ __docker-machine_subcommand() {
     case "$words[1]" in
         (active)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '(--timeout -t)'{--timeout=,-t=}'[Timeout in seconds, default to 10s]:seconds' && ret=0
             ;;
         (config)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '--swarm[Display the Swarm config instead of the Docker daemon]' \
                 "*:host:__docker-machine_hosts_all" && ret=0
             ;;
@@ -194,7 +193,7 @@ __docker-machine_subcommand() {
            ;;
         (env)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '--swarm[Display the Swarm config instead of the Docker daemon]' \
                 '--shell=[Force environment to be configured for a specified shell: \[fish, cmd, powershell\], default is auto-detect]:shell' \
                 '(--unset -u)'{--unset,-u}'[Unset variables instead of setting them]' \
@@ -206,23 +205,23 @@ __docker-machine_subcommand() {
             ;;
         (inspect)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '(--format -f)'{--format=,-f=}'[Format the output using the given go template]:template' \
                 '*:host:__docker-machine_hosts_all' && ret=0
             ;;
         (ip)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '*:host:__docker-machine_hosts_running' && ret=0
             ;;
         (kill)
              _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (ls)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '(--quiet -q)'{--quiet,-q}'[Enable quiet mode]' \
                 '*--filter=[Filter output based on conditions provided]:filter:->filter-options' \
                 '(--timeout -t)'{--timeout=,-t=}'[Timeout in seconds, default to 10s]:seconds' \
@@ -238,36 +237,36 @@ __docker-machine_subcommand() {
             ;;
         (regenerate-certs)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '(--force -f)'{--force,-f}'[Force rebuild and do not prompt]' \
                 '*:host:__docker-machine_hosts_all' && ret=0
             ;;
         (restart)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (rm)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '(--force -f)'{--force,-f}'[Remove local configuration even if machine cannot be removed, also implies an automatic yes (`-y`)]' \
                 '-y[Assumes automatic yes to proceed with remove, without prompting further user confirmation]' \
                 '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (scp)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '(--recursive -r)'{--recursive,-r}'[Copy files recursively (required to copy directories))]' \
                 '*:files:__docker-machine_hosts_and_files' && ret=0
             ;;
         (ssh)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '*:host:__docker-machine_hosts_running' && ret=0
             ;;
         (start)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (status)
@@ -275,7 +274,7 @@ __docker-machine_subcommand() {
             ;;
         (stop)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '*:host:__docker-machine_hosts_with_state' && ret=0
             ;;
         (upgrade)
@@ -283,7 +282,7 @@ __docker-machine_subcommand() {
             ;;
         (url)
             _arguments \
-                $opts_help \
+                "(- :)"{-h,--help}"[Print usage]" \
                 '*:host:__docker-machine_hosts_running' && ret=0
             ;;
     esac
