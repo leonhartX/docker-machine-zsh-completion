@@ -5,7 +5,7 @@ This has been merged in [docker-machine](https://github.com/docker/machine), but
 
 ## Installing Command Completion
 
-###Manual installation
+### Manual installation
 Place the completion scripts in your `/path/to/zsh/completion`, using e.g. `~/.zsh/completion/`
 
     mkdir -p ~/.zsh/completion
@@ -23,7 +23,7 @@ Then reload your shell
 
     exec $SHELL -l
 
-###Using oh-my-zsh
+### Using oh-my-zsh
 
 If you use [oh-my-zsh](https://github.com/robbyrussell/oh-my-zsh) then just clone the repository inside your oh-my-zsh repo:
 
@@ -34,7 +34,7 @@ and enable it in your `.zshrc`:
 	plugins+=(docker-machine)
 	autoload -U compinit && compinit
 
-###Available completions
+### Available completions
 Depending on what you typed on the command line so far, it will complete
 
  - available docker-machine commands
